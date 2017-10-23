@@ -7,7 +7,7 @@ class SGD
 
   def update(params:, grads:)
     params.keys.each do |key|
-      params[key][0] -= @lr * grads[key]
+      params[key][0, false] -= @lr * grads[key]
     end
   end
 end
@@ -29,7 +29,7 @@ class Momentum
 
     params.keys.each do |key|
       @v[key] = @momentum * @v[key] - @lr * grads[key]
-      params[key] += @v[key]
+      params[key][0, false] += @v[key]
     end
   end
 end
@@ -50,7 +50,7 @@ class AdaGrad
 
     params.keys.each do |key|
       @h[key] += grads[key] * grads[key]
-      params[key] -= @lr * grads[key] / (Numo::DFloat::Math.sqrt(@h[key]) + 1e-7)
+      params[key][0, false] -= @lr * grads[key] / (Numo::DFloat::Math.sqrt(@h[key]) + 1e-7)
     end
   end
 end
@@ -82,8 +82,50 @@ class Adam
       @m[key] += (1 - @beta1) * (grads[key] - @m[key])
       @v[key] += (1 - @beta2) * (grads[key] ** 2 - @v[key])
 
-      params[key][0] -= lr_t * @m[key] / (Numo::DFloat::Math.sqrt(@v[key]) + 1e-7)
+      params[key][0, false] -= lr_t * @m[key] / (Numo::DFloat::Math.sqrt(@v[key]) + 1e-7)
     end
   end
 end
 
+class Nesterov
+#    """Nesterov's Accelerated Gradient (http://arxiv.org/abs/1212.0901)"""
+    def initialize(lr: 0.01, momentum: 0.9)
+        @lr = lr
+        @momentum = momentum
+        @v = nil
+    end
+
+    def update(params:, grads:)
+        if @v.nil?
+            @v = {}
+            params.items.each{|key, val| @v[key] = Numo::DFloat.zeros(*(val.shape)) }
+        end
+            
+        params.keys.each{|key|
+            @v[key] *= @momentum
+            @v[key] -= @lr * grads[key]
+            params[key] += @momentum * @momentum * @v[key]
+            params[key] -= (1 + @momentum) * @lr * grads[key]
+        }
+    end
+end
+
+class RMSprop
+    def initialize(lr: 0.01, decay_rate: 0.99)
+        @lr = lr
+        @decay_rate = decay_rate
+        @h = nil
+    end
+
+    def update(params:, grads:)
+        if @h.nil?
+            self.h = {}
+            params.items.each{|key, vaal| @h[key] = Numo::DFloat.zeros(*(val.shape)) }
+        end
+        params.keys.each{|key|
+            @h[key] *= @decay_rate
+            @h[key] += (1 - @decay_rate) * grads[key] * grads[key]
+            params[key] -= @lr * grads[key] / (Numo::NMath.sqrt(@h[key]) + 1e-7)
+        }
+	end
+end
