@@ -3,7 +3,7 @@ require './optimizers'
 
 class Trainer
     # ニューラルネットの訓練を行うクラス
-    #
+    attr_reader :train_acc_list, :test_acc_list
     def initialize(network: , x_train: , t_train: , x_test: , t_test:,
                  epochs: 20, mini_batch_size: 100,
                  optimizer: 'SGD', optimizer_param: {'lr':0.01}, 

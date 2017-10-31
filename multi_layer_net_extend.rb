@@ -91,7 +91,7 @@ class MultiLayerNet
   end
 
   def numerical_gradients(x:, t:)    # 勾配を求める（数値微分）
-    loss_w = lambda { loss(x: x, t: t, train_flag: true) }
+      loss_w = lambda { loss(x: x, t: t, train_flag: true) }
       grads = {}
       (1..@hidden_layer_num + 1).each{|idx|
         grads["w#{idx}"] = numerical_gradient(loss_w, @params["w#{idx}"][0, false])
@@ -106,7 +106,6 @@ class MultiLayerNet
 
   def gradient(x:, t:)
     # forward
-
     loss(x: x, t: t, train_flag: true)
 
     # backward
