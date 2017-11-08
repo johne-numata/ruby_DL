@@ -53,8 +53,8 @@ class Trainer
             x_test_sample, t_test_sample = @x_test, @t_test
             if @evaluate_sample_num_per_epoch
                 t = @evaluate_sample_num_per_epoch
-                x_train_sample, t_train_sample = @x_train[:t], @t_train[:t]
-                x_test_sample, t_test_sample = @x_test[:t], @t_test[:t]
+                x_train_sample, t_train_sample = @x_train[0...t, false], @t_train[0...t, false]
+                x_test_sample, t_test_sample = @x_test[0...t, false], @t_test[0...t, false]
             end
             train_acc = @network.accuracy(x: x_train_sample, t: t_train_sample)
             test_acc = @network.accuracy(x: x_test_sample, t: t_test_sample)

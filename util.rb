@@ -14,12 +14,12 @@ def smooth_curve(x):
 =end
 
 
-def conv_output_size(input_size:, filter_size:, stride: 1, pad: 0)
+def conv_output_size(input_size:, filter_size:, stride:1, pad:0)
     return (input_size + 2 * pad - filter_size) / stride + 1
 end
 
 
-def im2col(input_data:, filter_h:, filter_w:, stride: 1, pad: 0)
+def im2col(input_data:, filter_h:, filter_w:, stride:1, pad:0)
 #   Parameters
 #   ----------
 #   input_data : (データ数, チャンネル, 高さ, 幅)の4次元配列からなる入力データ

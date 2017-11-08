@@ -107,7 +107,7 @@ def load_mnist(normalize: true, flatten: true, one_hot_label: false)
 
   unless flatten
     %i(train_img test_img).each do |key|
-      dataset[key] = dataset[key].reshape(dataset[key].shape[0], 28, 28)
+      dataset[key] = dataset[key].reshape(true, 1, 28, 28)
     end
   end
 
