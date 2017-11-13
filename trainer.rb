@@ -39,10 +39,10 @@ class Trainer
         x_batch = @x_train[batch_mask, false]
         t_batch = @t_train[batch_mask, false]
         
-        grads = @network.gradient(x: x_batch, t: t_batch)
-        @optimizer.update(params: @network.params, grads: grads)
+        grads = @network.gradient(x:x_batch, t:t_batch)
+        @optimizer.update(params:@network.params, grads:grads)
         
-        loss = @network.loss(x: x_batch, t: t_batch)
+        loss = @network.loss(x:x_batch, t:t_batch)
         @train_loss_list << (loss)
         puts("train loss:" + loss.to_s) if @verbose
         

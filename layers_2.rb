@@ -35,7 +35,8 @@ class Sigmoid
 end
 
 class Affine
-  attr_reader :w, :dw, :db 
+  attr_reader :dw, :db 
+  attr_accessor  :w, :b
   def initialize(w:, b:)
     @w = w
     @b = b
@@ -100,7 +101,7 @@ class Dropout
         @mask = nil
 	end
 
-    def forward(x:, train_flag: true)
+    def forward(x:, train_flag:nil)
         if train_flag
             @mask = Numo::DFloat.new(x.shape).rand > @dropout_ratio
             return x * @mask
@@ -203,6 +204,7 @@ end
 
 class Convolution
 	attr_reader  :dw, :db
+	attr_accessor  :w, :b
     def initialize(w:, b:, stride:1, pad:0)
         @w = w
         @b = b
@@ -219,7 +221,7 @@ class Convolution
         @db = nil
 	end
 
-    def forward(x:, train_flag: true)
+    def forward(x:, train_flag:nil)
         fn, c, fh, fw = @w.shape
         n, c, h, w = x.shape
         out_h = 1 + ((h + 2*@pad - fh) / @stride).to_i
@@ -264,7 +266,7 @@ class Pooling
         @arg_max = nil
 	end
 
-    def forward(x:, train_flag:true)
+    def forward(x:, train_flag:nil)
         n, c, h, w = x.shape
         out_h = (1 + (h - @pool_h) / @stride).to_i
         out_w = (1 + (w - @pool_w) / @stride).to_i

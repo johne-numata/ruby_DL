@@ -1,7 +1,7 @@
 require 'numo/gnuplot'
 require './mnist.rb'
 require './optimizers.rb'
-require './multi_layer_net.rb'
+require './multi_layer_net_extend.rb'
 
 # 0: MNISTƒf[ƒ^‚Ì“Ç‚İ‚İ
 x_train, t_train, x_test, t_test = load_mnist(normalize: true)
