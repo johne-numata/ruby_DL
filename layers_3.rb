@@ -36,7 +36,8 @@ class Sigmoid
 end
 
 class Affine
-  attr_reader :w, :dw, :db 
+  attr_reader :dw, :db 
+  attr_accessor  :w, :b
   def initialize(w:, b:)
     @w = w
     @b = b
@@ -201,95 +202,104 @@ class BatchNormalization
         return dx
 	end
 end
-=begin
+
 class Convolution
-    def initialize(w:, b:, stride: 1, pad: 0)
+	attr_reader  :dw, :db
+	attr_accessor  :w, :b
+    def initialize(w:, b:, stride:1, pad:0)
         @w = w
         @b = b
         @stride = stride
         @pad = pad
         
         # 中間データ（backward時に使用）
-        @x = None   
-        @col = None
-        @col_w = None
+        @x = nil   
+        @col = nil
+        @col_w = nil
         
         # 重み・バイアスパラメータの勾配
         @dw = nil
         @db = nil
 	end
 
-    def forward(x:)
+    def forward(x:, train_flag:nil)
         fn, c, fh, fw = @w.shape
         n, c, h, w = x.shape
         out_h = 1 + ((h + 2*@pad - fh) / @stride).to_i
         out_w = 1 + ((w + 2*@pad - fw) / @stride).to_i
 
-        col = im2col(x: x, filter_h: fh, filter_w: fw, stride: @stride, pad: @pad)
-        col_w = @w.reshape(fn, true).T
+        col = im2col(input_data:x, filter_h:fh, filter_w:fw, stride:@stride, pad:@pad)
+        col_w = @w.reshape(fn, true).transpose
 
-        out = np.dot(col, col_W) + self.b
-        out = out.reshape(N, out_h, out_w, -1).transpose(0, 3, 1, 2)
+#       out = col.dot(col_w) + @b
+        out = Numo::Linalg.matmul(col, col_w) + @b
+        out = out.reshape(n, out_h, out_w, true).transpose(0, 3, 1, 2)
 
-        self.x = x
-        self.col = col
-        self.col_W = col_W
+        @x = x
+        @col = col
+        @col_w = col_w
 
         return out
 	end
 
-    def backward(self, dout):
-        FN, C, FH, FW = self.W.shape
-        dout = dout.transpose(0,2,3,1).reshape(-1, FN)
+    def backward(dout:)
+        fn, c, fh, fw = @w.shape
+        dout = dout.transpose(0,2,3,1).reshape(true, fn)
 
-        self.db = np.sum(dout, axis=0)
-        self.dW = np.dot(self.col.T, dout)
-        self.dW = self.dW.transpose(1, 0).reshape(FN, C, FH, FW)
+        @db = dout.sum(0)
+#        @dw = @col.transpose.dot(dout)
+        @dw = Numo::Linalg.matmul(@col.transpose, dout)
+        @dw = @dw.transpose(1, 0).reshape(fn, c, fh, fw)
 
-        dcol = np.dot(dout, self.col_W.T)
-        dx = col2im(dcol, self.x.shape, FH, FW, self.stride, self.pad)
+#        dcol = dout.dot(@col_w.transpose)
+        dcol = Numo::Linalg.matmul(dout, @col_w.transpose)
+        dx = col2im(col:dcol, input_shape:@x.shape, filter_h:fh, filter_w:fw, stride:@stride, pad: @pad)
 
         return dx
+    end
 end
 
-class Pooling:
-    def __init__(self, pool_h, pool_w, stride=1, pad=0):
-        self.pool_h = pool_h
-        self.pool_w = pool_w
-        self.stride = stride
-        self.pad = pad
+class Pooling
+    def initialize(pool_h:, pool_w:, stride:1, pad:0)
+        @pool_h = pool_h
+        @pool_w = pool_w
+        @stride = stride
+        @pad = pad
         
-        self.x = None
-        self.arg_max = None
+        @x = nil
+        @arg_max = nil
+	end
 
-    def forward(self, x):
-        N, C, H, W = x.shape
-        out_h = int(1 + (H - self.pool_h) / self.stride)
-        out_w = int(1 + (W - self.pool_w) / self.stride)
+    def forward(x:, train_flag:nil)
+        n, c, h, w = x.shape
+        out_h = (1 + (h - @pool_h) / @stride).to_i
+        out_w = (1 + (w - @pool_w) / @stride).to_i
 
-        col = im2col(x, self.pool_h, self.pool_w, self.stride, self.pad)
-        col = col.reshape(-1, self.pool_h*self.pool_w)
+        col = im2col(input_data: x, filter_h: @pool_h, filter_w: @pool_w, stride: @stride, pad: @pad)
+        col = col.reshape(true, @pool_h*@pool_w)
 
-        arg_max = np.argmax(col, axis=1)
-        out = np.max(col, axis=1)
-        out = out.reshape(N, out_h, out_w, C).transpose(0, 3, 1, 2)
+#       @arg_max = col.max_index(1) % col.shape[1]
+        @arg_max = col.max_index(1)		# narrayの仕様に合わせて先頭からの連番を保存
+        out = col.max(1)
+        out = out.reshape(n, out_h, out_w, c).transpose(0, 3, 1, 2)
 
-        self.x = x
-        self.arg_max = arg_max
+        @x = x
 
         return out
+	end
 
-    def backward(self, dout):
+    def backward(dout:)
         dout = dout.transpose(0, 2, 3, 1)
         
-        pool_size = self.pool_h * self.pool_w
-        dmax = np.zeros((dout.size, pool_size))
-        dmax[np.arange(self.arg_max.size), self.arg_max.flatten()] = dout.flatten()
-        dmax = dmax.reshape(dout.shape + (pool_size,)) 
+        pool_size = @pool_h * @pool_w
+        dmax = Numo::DFloat.zeros(dout.size, pool_size)
+#       dmax[(0...@arg_max.size), @arg_max.flatten()] = dout.flatten().to_a
+        dmax[@arg_max] = dout.flatten							  # narrayの仕様に合わせて変更
+        dmax = dmax.reshape(*(dout.shape + [pool_size])) 
         
-        dcol = dmax.reshape(dmax.shape[0] * dmax.shape[1] * dmax.shape[2], -1)
-        dx = col2im(dcol, self.x.shape, self.pool_h, self.pool_w, self.stride, self.pad)
+        dcol = dmax.reshape(dmax.shape[0] * dmax.shape[1] * dmax.shape[2], true)
+        dx = col2im(col:dcol, input_shape:@x.shape, filter_h:@pool_h, filter_w:@pool_w, stride:@stride, pad:@pad)
         
         return dx
-=end
-
+	end
+end
