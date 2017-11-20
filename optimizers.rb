@@ -78,12 +78,11 @@ class Adam
     @iter += 1
     lr_t = @lr * Numo::DFloat::Math.sqrt(1.0 - @beta2 ** @iter) / (1.0 - @beta1 ** @iter)
 
-    params.keys.each do |key|
+    params.keys.each{|key|
       @m[key] += (1 - @beta1) * (grads[key] - @m[key])
       @v[key] += (1 - @beta2) * (grads[key] ** 2 - @v[key])
-
       params[key][0, false] -= lr_t * @m[key] / (Numo::DFloat::Math.sqrt(@v[key]) + 1e-7)
-    end
+    }
   end
 end
 

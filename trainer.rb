@@ -39,10 +39,10 @@ class Trainer
         x_batch = @x_train[batch_mask, false]
         t_batch = @t_train[batch_mask, false]
         
-        grads = @network.gradient(x: x_batch, t: t_batch)
-        @optimizer.update(params: @network.params, grads: grads)
+        grads = @network.gradient(x:x_batch, t:t_batch)
+        @optimizer.update(params:@network.params, grads:grads)
         
-        loss = @network.loss(x: x_batch, t: t_batch)
+        loss = @network.loss(x:x_batch, t:t_batch)
         @train_loss_list << (loss)
         puts("train loss:" + loss.to_s) if @verbose
         
@@ -53,8 +53,8 @@ class Trainer
             x_test_sample, t_test_sample = @x_test, @t_test
             if @evaluate_sample_num_per_epoch
                 t = @evaluate_sample_num_per_epoch
-                x_train_sample, t_train_sample = @x_train[:t], @t_train[:t]
-                x_test_sample, t_test_sample = @x_test[:t], @t_test[:t]
+                x_train_sample, t_train_sample = @x_train[0...t, false], @t_train[0...t, false]
+                x_test_sample, t_test_sample = @x_test[0...t, false], @t_test[0...t, false]
             end
             train_acc = @network.accuracy(x: x_train_sample, t: t_train_sample)
             test_acc = @network.accuracy(x: x_test_sample, t: t_test_sample)
