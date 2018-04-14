@@ -1,4 +1,5 @@
 require './functions.rb'
+require './util'
 require 'numo/linalg/linalg'
 Numo::Linalg::Blas.dlopen("/usr/local/opt/OpenBLAS/lib/libblas.dylib")
 

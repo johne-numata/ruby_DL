@@ -1,6 +1,6 @@
 require 'numo/narray'
 require './numerical_gradient.rb'
-require './layers_2.rb'
+require './layers_3.rb'
 
 class MultiLayerNet
 	attr_reader :use_batchnorm

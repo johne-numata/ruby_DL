@@ -1,5 +1,5 @@
 require 'numo/narray'
-require './layers_2'
+require './layers_3'
 
 class DeepConvNet
 	attr_reader  :params
